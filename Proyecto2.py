@@ -1,26 +1,38 @@
 import json
 import networkx as nx
+import geopandas as gpd
 
-# Cargar datos GeoJSON
-with open('MallaBogota.geojson', 'r', encoding='utf-8') as f:
-    datos_geojson = json.load(f)
+# Read GeoJSON file
+print('Empezo a leer el archivo')
+gdf = gpd.read_file('MallaBogota.geojson')
+print('Termino de leer el archivo')
+# Display the GeoDataFrame
 
-# Crear un grafo geográfico
+
+# Initialize a networkx graph
 G = nx.Graph()
 
-# Iterar sobre cada característica (Feature) en los datos GeoJSON
-for feature in datos_geojson['features']:
-    # Obtener los atributos de la característica
-    props = feature['properties']
+for index, row in gdf.iterrows():
+    # Extract node attributes from GeoDataFrame columns
+    node_attributes = {key: row[key] for key in row.keys() if key != 'geometry'}
     
-    # Obtener la geometría (LineString)
-    coords = feature['geometry']['coordinates']
+    # Extract geometry from the row
+    geometry = row['geometry']
     
-    # Agregar los nodos (puntos de inicio y fin de la línea)
-    inicio = tuple(coords[0])
-    fin = tuple(coords[-1])
-    G.add_node(inicio, **props)
-    G.add_node(fin, **props)
-    
-    # Agregar la arista (línea) entre los nodos
-    G.add_edge(inicio, fin, object=feature)
+    # Check the geometry type
+    if geometry.geom_type == 'Point':
+        # For point geometries, add a node to the graph
+        G.add_node(index, **node_attributes)
+    elif geometry.geom_type == 'LineString':
+        # For LineString geometries, add edges to the graph
+        nodes = list(geometry.coords)
+        for i in range(len(nodes) - 1):
+            G.add_edge(nodes[i], nodes[i+1], **node_attributes)
+    elif geometry.geom_type == 'MultiLineString':
+        # For MultiLineString geometries, iterate over each LineString
+        for line in geometry:
+            nodes = list(line.coords)
+            for i in range(len(nodes) - 1):
+                G.add_edge(nodes[i], nodes[i+1], **node_attributes)
+
+# Now you have a networkx graph `G` representing the spatial data from the GeoDataFrame
