@@ -2,7 +2,7 @@ import json
 import networkx as nx
 
 # Cargar datos GeoJSON
-with open('MallaBogota.geojson') as f:
+with open('MallaBogota.geojson', 'r', encoding='utf-8') as f:
     datos_geojson = json.load(f)
 
 # Crear un grafo geográfico
